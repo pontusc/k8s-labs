@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: liveness
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: healthcheck-testing
+  namespace: liveness
+spec:
+  replicas: 25
+  selector:
+    matchLabels:
+      app: rest-api
+  template:
+    metadata:
+      labels:
+        app: rest-api
+    spec:
+      containers:
+        - name: rest-api
+          image: pontusc/failing-api:v2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            failureThreshold: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-failing-api
+  namespace: liveness
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: rest-api
